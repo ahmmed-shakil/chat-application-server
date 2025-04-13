@@ -53,6 +53,9 @@ const register = async (req: Request, res: Response) => {
         to: email,
         subject: "Welcome to WhatsApp Clone",
         html: `
+        <div style="text-align: center; marginBottom:"20px">
+        <img src="https://www.google.com/search?q=whatsapp+logo&rlz=1C1CHBF_enBD1066BD1066&oq=whatsapp+logo&gs_lcrp=EgZjaHJvbWUyDAgAEEUYORixAxiABDIKCAEQABixAxiABDIHCAIQABiABDIHCAMQABiABDIHCAQQABiABDIHCAUQABiABDIHCAYQABiABDIHCAcQABiABDIHCAgQABiABDIHCAkQABiABNIBCDYzNzlqMGo3qAIAsAIA&sourceid=chrome&ie=UTF-8" alt="Company Logo" style="width: 150px; margin-bottom: 20px;" />
+        </div>  
           <h1>Welcome to WhatsApp Clone, ${name}!</h1>
           <p>Thank you for registering with us. Enjoy messaging with your friends and family!</p>
         `,
