@@ -103,7 +103,7 @@
     "keys/**/*",
     "logs/**/*",
     "types/**/*",
-    "src/index.ts"
+    "index.ts"
   ],
   "exclude": ["node_modules"]
 }

@@ -9,11 +9,11 @@ dotenv.config();
 
 // Socket controller
 // Routes
-import authRoutes from "./routes/auth.routes";
-import userRoutes from "./routes/user";
-import messageRoutes from "./routes/message";
-import chatRoutes from "./routes/chat";
-import { setupSocketHandlers } from "./socket/socketController";
+import authRoutes from "./src/routes/auth.routes";
+import userRoutes from "./src/routes/user";
+import messageRoutes from "./src/routes/message";
+import chatRoutes from "./src/routes/chat";
+import { setupSocketHandlers } from "./src/socket/socketController";
 
 // Load environment variables
 
