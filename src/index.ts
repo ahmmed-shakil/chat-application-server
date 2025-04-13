@@ -71,4 +71,6 @@ server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 
-console.log("Hello via Bun!");
+console.log("Hello!");
+
+export default app;
