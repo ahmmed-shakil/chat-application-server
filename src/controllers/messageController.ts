@@ -19,7 +19,10 @@ export const sendMessage = async (req: Request, res: Response) => {
     }
 
     // Check if chat exists
-    const chat = await Chat.findById(chatId);
+    const chat = await Chat.findById(chatId).populate(
+      "users",
+      "name profilePicture"
+    );
     if (!chat) {
       return res.status(404).json({
         success: false,
@@ -28,7 +31,7 @@ export const sendMessage = async (req: Request, res: Response) => {
     }
 
     // Check if user is part of the chat
-    if (!chat.users.includes(req.user?.id)) {
+    if (!chat.users.some((user: any) => user._id.toString() === req.user?.id)) {
       return res.status(403).json({
         success: false,
         message: "You are not a member of this chat",
@@ -49,8 +52,32 @@ export const sendMessage = async (req: Request, res: Response) => {
       .populate("sender", "name profilePicture")
       .populate("chat");
 
+    if (!message) {
+      return res.status(500).json({
+        success: false,
+        message: "Failed to create message",
+      });
+    }
+
     // Update chat's lastMessage
     await Chat.findByIdAndUpdate(chatId, { lastMessage: newMessage._id });
+
+    // Emit socket event for real-time message delivery
+    const io = req.app.get("io");
+    if (io) {
+      // Emit to chat room for real-time display
+      io.to(chatId).emit("message-received", message);
+
+      // Emit chat list update
+      io.emit("chat-list-update", message);
+
+      // Emit delivery confirmation to sender
+      io.to(req.user?.id).emit("message-delivered", {
+        messageId: message._id,
+        chatId: chatId,
+        userId: req.user?.id,
+      });
+    }
 
     res.status(201).json({
       success: true,
@@ -92,16 +119,38 @@ export const getMessages = async (req: Request, res: Response) => {
       .populate("chat")
       .sort({ createdAt: 1 }); // Sort by oldest first
 
+    // Get messages that need to be marked as read
+    const unreadMessages = await Message.find({
+      chat: chatId,
+      readBy: { $ne: req.user?._id }, // Not read by current user
+      sender: { $ne: req.user?._id }, // Not sent by current user
+    });
+
     // Mark messages as read
-    await Message.updateMany(
-      {
-        chat: chatId,
-        readBy: { $ne: req.user?._id }, // Not read by current user
-      },
-      {
-        $addToSet: { readBy: req.user?._id }, // Add current user to readBy
+    if (unreadMessages.length > 0) {
+      await Message.updateMany(
+        {
+          chat: chatId,
+          readBy: { $ne: req.user?._id }, // Not read by current user
+          sender: { $ne: req.user?._id }, // Not sent by current user
+        },
+        {
+          $addToSet: { readBy: req.user?._id }, // Add current user to readBy
+        }
+      );
+
+      // Emit read events for each message
+      const io = req.app.get("io");
+      if (io) {
+        unreadMessages.forEach((message) => {
+          io.emit("message-read-update", {
+            messageId: message._id,
+            userId: req.user?.id,
+            chatId: chatId,
+          });
+        });
       }
-    );
+    }
 
     res.status(200).json({
       success: true,
@@ -172,8 +221,32 @@ export const uploadFile = async (req: Request, res: Response) => {
       .populate("sender", "name profilePicture")
       .populate("chat");
 
+    if (!message) {
+      return res.status(500).json({
+        success: false,
+        message: "Failed to create message",
+      });
+    }
+
     // Update chat's lastMessage
     await Chat.findByIdAndUpdate(chatId, { lastMessage: newMessage._id });
+
+    // Emit socket event for real-time message delivery
+    const io = req.app.get("io");
+    if (io) {
+      // Emit to chat room for real-time display
+      io.to(chatId).emit("message-received", message);
+
+      // Emit chat list update
+      io.emit("chat-list-update", message);
+
+      // Emit delivery confirmation to sender
+      io.to(req.user?.id).emit("message-delivered", {
+        messageId: message._id,
+        chatId: chatId,
+        userId: req.user?.id,
+      });
+    }
 
     res.status(201).json({
       success: true,

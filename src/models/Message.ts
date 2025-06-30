@@ -48,6 +48,10 @@ const MessageSchema: Schema = new Schema(
         ref: "User",
       },
     ],
+    sent: {
+      type: Boolean,
+      default: true,
+    },
   },
   { timestamps: true }
 );

@@ -116,6 +116,7 @@ import { Server, Socket } from "socket.io";
 import jwt from "jsonwebtoken";
 import User from "../models/User";
 import Chat from "../models/Chat";
+import Message from "../models/Message";
 
 interface JwtPayload {
   userId: string;
@@ -285,8 +286,27 @@ export const setupSocketHandlers = (io: Server) => {
 
     // Handle when user reads a message
     socket.on("message-read", async (messageId, userId) => {
-      // console.log(`Message ${messageId} marked as read by user ${userId}`);
-      io.emit("message-read-update", messageId, userId);
+      try {
+        console.log(`Message ${messageId} marked as read by user ${userId}`);
+
+        // Update message in database
+        const message = await Message.findByIdAndUpdate(
+          messageId,
+          { $addToSet: { readBy: userId } },
+          { new: true }
+        ).populate("chat");
+
+        if (message) {
+          // Emit to all clients about the read update
+          io.emit("message-read-update", {
+            messageId: messageId,
+            userId: userId,
+            chatId: message.chat._id,
+          });
+        }
+      } catch (error) {
+        console.error("Error handling message read:", error);
+      }
     });
 
     // Handle user disconnect

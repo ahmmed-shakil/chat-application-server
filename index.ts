@@ -32,12 +32,6 @@ app.use(
 // Static files for uploaded media
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// API Routes
-app.use("/api/auth", authRoutes);
-app.use("/api/users", userRoutes);
-app.use("/api/messages", messageRoutes);
-app.use("/api/chats", chatRoutes);
-
 // Socket.io setup
 const io = new Server(server, {
   cors: {
@@ -48,6 +42,16 @@ const io = new Server(server, {
 });
 
 // Socket handlers
+setupSocketHandlers(io);
+
+// Make io available globally for controllers
+app.set("io", io);
+
+// API Routes
+app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/messages", messageRoutes);
+app.use("/api/chats", chatRoutes);
 setupSocketHandlers(io);
 
 // MongoDB Connection
