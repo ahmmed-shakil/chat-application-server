@@ -309,6 +309,46 @@ export const setupSocketHandlers = (io: Server) => {
       }
     });
 
+    // Handle message delivery acknowledgment
+    socket.on(
+      "message-delivered",
+      async (data: { messageId: string; chatId: string }) => {
+        try {
+          console.log(`Message ${data.messageId} delivered to user`);
+
+          // Find the message and get the sender
+          const message = await Message.findById(data.messageId).populate(
+            "sender"
+          );
+
+          if (message && message.sender) {
+            // Emit delivery confirmation to the message sender
+            const senderId = (message.sender as any)._id.toString();
+            const senderSocketId = activeUsers.get(senderId);
+            if (senderSocketId) {
+              io.to(senderSocketId).emit("message-delivered", {
+                messageId: data.messageId,
+                chatId: data.chatId,
+                userId: senderId,
+              });
+            }
+
+            // Also emit to sender's user room for redundancy
+            io.to(senderId).emit("message-delivered", {
+              messageId: data.messageId,
+              chatId: data.chatId,
+              userId: senderId,
+            });
+          }
+        } catch (error) {
+          console.error(
+            "Error handling message delivery acknowledgment:",
+            error
+          );
+        }
+      }
+    );
+
     // Handle user disconnect
     socket.on("disconnect", async () => {
       console.log("Client disconnected: ", socket.id);
